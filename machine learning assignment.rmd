@@ -1,0 +1,81 @@
+---
+title: "machine learning project"
+author: "omar marey"
+date: "3/13/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## load libraries 
+```{r,echo=FALSE}
+library(caret)
+library(dplyr)
+
+```
+## downloading and loading the data 
+```{r,results='hide'}
+#download.file('https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv','pml-training.csv')
+#download.file('https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv','pml-testing.csv')
+
+training <- read.csv('pml-training.csv',na.strings = "#DIV/0!")
+testing <- read.csv('pml-testing.csv',na.strings = "#DIV/0!")
+
+```
+it appears that the data has some null values coded as "#DIV/0!"
+## exploring the data 
+```{r}
+summary(training)
+str(training)
+#unique(training)
+```
+
+
+## cleaning the data 
+```{r,results='hide'}
+cleaning <- function(Data,test = F){
+  for(i in c(8:ncol(Data)-1)) {Data[,i] = as.numeric(as.character(Data[,i]))}
+  complete_cols <- colnames(Data[colSums(is.na(Data)) == 0])[-(1:7)]
+  Data <- Data[complete_cols]
+  if(!test){
+    Data$classe <- as.factor(Data$classe) }
+  
+  Data
+}
+training <- cleaning(training)
+testing <- cleaning(testing,test = T)
+
+
+```
+here i made a function to clean the data it remove the first 2 columns as we will not need them in the 
+model and convert the rest of the column to numerical values and remove any incomplete column (has any null values)
+
+## model creation
+```{r}
+library(randomForest)
+set.seed(47)
+inTrain <- createDataPartition(training$classe, p=0.70, list=F)
+trainData <- training[inTrain, ]
+val <- training[-inTrain, ]
+modfit <- randomForest(classe~.,data = trainData)
+
+```
+here i used random forest algorithm and divided the data to training set and validation set 
+
+## validating the model
+```{r}
+pred <- predict(modfit,val)
+
+confusionMatrix(val$classe,pred)
+```
+
+here we can see the result of prediction on the validation set and the model working pretty well
+
+## quiz answers 
+```{r}
+
+res <- predict(modfit,testing)
+res
+```
+those are the right answers of the quiz 
